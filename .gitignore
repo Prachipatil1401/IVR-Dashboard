@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Large uploaded CSV files
+ivr_dashboard/uploads/*.csv
+
+# Environment files
+.env
