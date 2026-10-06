@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VoxPilot IVR Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#07111f; --bg-2:#0d1b2d; --panel:rgba(16,25,41,0.88); --panel-2:#132031;
+    --card:#101d2d; --border:rgba(126,163,255,0.18); --soft:rgba(255,255,255,0.06);
+    --text:#edf4ff; --muted:#9caec8; --accent:#7c5cff; --accent-2:#2dd4bf; --accent-3:#ff7a59;
+    --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --grey:#94a3b8; --shadow:0 24px 60px rgba(7, 17, 31, 0.45);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:radial-gradient(circle at top left, rgba(124,92,255,.26), transparent 25%), radial-gradient(circle at top right, rgba(45,212,191,.14), transparent 28%), linear-gradient(180deg, var(--bg) 0%, #091521 100%); color:var(--text); font-family:'Inter',sans-serif; font-size:13px;}
+  h1,h2,h3,.brand{font-family:'Space Grotesk',sans-serif;}
+  .layout{display:flex; min-height:100vh;}
+
+  .sidebar{width:250px; flex-shrink:0; background:rgba(11,19,32,0.88); border-right:1px solid var(--border); padding:22px 18px; position:sticky; top:0; height:100vh; box-shadow:inset -1px 0 0 rgba(255,255,255,0.03);}
+  .brand-wrap{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+  .brand-mark{width:42px; height:42px; border-radius:14px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); display:flex; align-items:center; justify-content:center; font-weight:800; color:#04111b; font-size:18px; box-shadow:0 12px 28px rgba(124,92,255,.45);}
+  .brand{font-size:22px; font-weight:700; letter-spacing:-.04em; margin:0;}
+  .brand-sub{font-size:11px; color:var(--muted); margin:0 0 24px; line-height:1.6; padding-left:3px;}
+  .nav-item{display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; margin-bottom:6px; border:none; background:transparent; color:var(--muted); border-radius:12px; cursor:pointer; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; transition:all .2s ease;}
+  .nav-item:hover{background:rgba(255,255,255,0.04); color:var(--text);}
+  .nav-item.active{background:linear-gradient(90deg, rgba(124,92,255,.2), rgba(45,212,191,.1)); color:var(--text); border:1px solid rgba(124,92,255,.22);}
+  .nav-dot{width:8px;height:8px;border-radius:50%;background:var(--muted); box-shadow:0 0 0 4px rgba(255,255,255,0.02);}
+  .nav-item.active .nav-dot{background:var(--accent-2); box-shadow:0 0 0 6px rgba(45,212,191,.12);}
+
+  .main{flex:1; padding:26px 30px 28px; min-width:0;}
+  .topbar{display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px; background:rgba(12,20,33,0.78); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:22px; box-shadow:var(--shadow);}
+  .field{display:flex; flex-direction:column; gap:6px; min-width:160px;}
+  .field label{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  select, input[type=date], input[type=text]{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text); border-radius:10px;
+    padding:9px 12px; font-family:'Inter',sans-serif; font-size:12.8px; outline:none;
+  }
+  select:focus, input[type=date]:focus{border-color:rgba(124,92,255,.45); box-shadow:0 0 0 3px rgba(124,92,255,0.08);}
+  .btn{background:linear-gradient(135deg, var(--accent), #9b7bff); color:#fff; border:none; padding:9px 16px; border-radius:10px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; font-size:12.8px; box-shadow:0 12px 22px rgba(124,92,255,.26); transition:transform .15s ease;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn.secondary{background:rgba(255,255,255,0.02); color:var(--text); border:1px solid var(--border); box-shadow:none;}
+  .meta-line{color:var(--muted); font-size:11.8px; margin-left:auto; text-align:right; line-height:1.5;}
+  #uploadInput{display:none;}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .hero-strip{display:flex; align-items:center; justify-content:space-between; gap:12px; background:linear-gradient(135deg, rgba(124,92,255,.13), rgba(45,212,191,.07)); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:18px; box-shadow:var(--shadow);}
+  .hero-title{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent-2); font-weight:700; margin-bottom:6px;}
+  .hero-main{font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; letter-spacing:-.04em;}
+  .hero-tag{background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--muted); border-radius:999px; padding:7px 12px; font-size:11.6px;}
+
+  .quick-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:18px;}
+  .stat-badge{background:linear-gradient(180deg, rgba(18,31,47,0.9), rgba(9,15,23,0.95)); border:1px solid var(--border); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow);}
+  .badge-label{display:block; color:var(--muted); font-size:10px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px;}
+  .badge-value{font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; letter-spacing:-.04em;}
+  .badge-meta{display:block; margin-top:4px; font-size:11px; color:var(--accent-2);}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:20px;}
+  .kpi-card{background:linear-gradient(180deg, rgba(18,31,47,0.88), rgba(15,21,31,0.95)); border:1px solid var(--border); border-radius:var(--radius); padding:16px 16px 15px; box-shadow:var(--shadow);}
+  .kpi-label{color:var(--muted); font-size:11px; margin-bottom:8px; letter-spacing:.07em; text-transform:uppercase;}
+  .kpi-value{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; letter-spacing:-.04em;}
+  .kpi-sub{font-size:11.5px; margin-top:6px;}
+  .kpi-sub.ok{color:var(--ok);} .kpi-sub.bad{color:var(--bad);} .kpi-sub.neutral{color:var(--muted);}
+
+  .chart-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:16px;}
+  .card{background:linear-gradient(180deg, rgba(15,23,36,0.92), rgba(11,17,25,0.95)); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow);}
+  .card h3{margin:0 0 2px 0; font-size:15px; letter-spacing:-.02em;}
+  .card .sub{color:var(--muted); font-size:11px; margin-bottom:12px;}
+  canvas{max-height:320px;}
+
+  .insight-card{background:linear-gradient(180deg, rgba(18,29,44,0.9), rgba(12,19,29,0.95)); border:1px solid var(--border); border-left:3px solid var(--accent-2); border-radius:14px; padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow);}
+  .insight-cat{display:inline-block; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent-2); background:rgba(45,212,191,.12); padding:5px 8px; border-radius:999px; margin-bottom:6px;}
+  .insight-title{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14.5px; margin-bottom:6px;}
+  .insight-body{color:var(--muted); font-size:12.5px; line-height:1.6;}
+
+  .empty-state{color:var(--muted); padding:40px; text-align:center;}
+  #loadError{color:var(--bad); padding:10px 0;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="brand-wrap">
+      <div class="brand-mark">V</div>
+      <div class="brand">VoxPilot</div>
+    </div>
+    <div class="brand-sub">Smart call monitoring for outbound voice campaigns</div>
+    <button class="nav-item active" data-tab="overview"><span class="nav-dot"></span>Dashboard</button>
+    <button class="nav-item" data-tab="time"><span class="nav-dot"></span>Timing</button>
+    <button class="nav-item" data-tab="dtmf"><span class="nav-dot"></span>Response</button>
+    <button class="nav-item" data-tab="failure"><span class="nav-dot"></span>Failures</button>
+    <button class="nav-item" data-tab="insights"><span class="nav-dot"></span>Suggestions</button>
+  </div>
+
+  <div class="main">
+    <div class="hero-strip">
+      <div>
+        <div class="hero-title">Campaign status</div>
+        <div class="hero-main">VoxPilot Performance Dashboard</div>
+      </div>
+      <div class="hero-tag">Live campaign view</div>
+    </div>
+
+    <div class="quick-stats">
+      <div class="stat-badge">
+        <span class="badge-label">Call health</span>
+        <div class="badge-value">87.4%</div>
+        <span class="badge-meta">+3.2% vs previous week</span>
+      </div>
+      <div class="stat-badge">
+        <span class="badge-label">Avg. response</span>
+        <div class="badge-value">4.8m</div>
+        <span class="badge-meta">Average key press time</span>
+      </div>
+      <div class="stat-badge">
+        <span class="badge-label">Weak time</span>
+        <div class="badge-value">21:00</div>
+        <span class="badge-meta">Most difficult hour</span>
+      </div>
+      <div class="stat-badge">
+        <span class="badge-label">Action needed</span>
+        <div class="badge-value">3 fixes</div>
+        <span class="badge-meta">Changes to test</span>
+      </div>
+    </div>
+
+    <div class="topbar">
+      <div class="field">
+        <label>CSV file</label>
+        <select id="csvSelect"></select>
+      </div>
+      <div class="field">
+        <label>Start date</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="field">
+        <label>End date</label>
+        <input type="date" id="endDate">
+      </div>
+      <button class="btn" id="applyBtn">Apply</button>
+      <button class="btn secondary" id="resetBtn">Reset</button>
+      <button class="btn secondary" id="uploadBtn">Upload CSV</button>
+      <input type="file" id="uploadInput" accept=".csv">
+      <div class="meta-line" id="metaLine"></div>
+    </div>
+
+    <div id="loadError"></div>
+
+    <!-- Dashboard -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="chart-grid">
+<div class="card"><h3>Call result split</h3><div class="sub">Connected, timeout, busy, no-answer, and line drop</div><canvas id="chartStatus"></canvas></div>
+      <div class="card"><h3>Daily call trend</h3><div class="sub">Total calls, successful connects, and response activity by day</div><canvas id="chartDaily"></canvas></div>
+    </div>
+    <div class="card"><h3>Call volume by weekday</h3><div class="sub">Total calls vs successful calls</div><canvas id="chartWeekday"></canvas></div>
+    </div>
+
+    <!-- Timing -->
+    <div class="tab-panel" id="tab-time">
+      <div class="card"><h3>Hourly call volume</h3><div class="sub">Total calls and successful connections by hour</div><canvas id="chartHourly"></canvas></div>
+      <div class="card"><h3>Call duration by time</h3><div class="sub">Average and median call length during the day</div><canvas id="chartDurByHour"></canvas></div>
+      <div class="card"><h3>Call length distribution</h3><div class="sub">How long successful calls last</div><canvas id="chartDurHist"></canvas></div>
+    </div>
+
+    <!-- Response -->
+    <div class="tab-panel" id="tab-dtmf">
+      <div class="chart-grid">
+        <div class="card"><h3>Customer response rate</h3><div class="sub">Share of connected calls that responded</div><canvas id="chartDtmfPie"></canvas></div>
+        <div class="card"><h3>Key press pattern</h3><div class="sub">Which option users are choosing</div><canvas id="chartDtmfKeys"></canvas></div>
+      </div>
+      <div class="card"><h3>Call length groups</h3><div class="sub">How long people stay on the line</div><canvas id="chartTalkTime"></canvas></div>
+    </div>
+
+    <!-- Failures -->
+    <div class="tab-panel" id="tab-failure">
+      <div class="card"><h3>Failure reasons</h3><div class="sub">Main reasons calls do not connect</div><canvas id="chartFailure"></canvas></div>
+      <div class="card"><h3>Peak vs quiet hours</h3><div class="sub">Failure mix during the busiest and slowest call periods</div><canvas id="chartDipPeak"></canvas></div>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="tab-panel" id="tab-insights">
+      <div id="insightsList"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const STATUS_COLORS = {
+  'Connected':'#FF9F45', 'Timeout':'#5B8DEF', 'User Not Responding':'#B8C2CC',
+  'Busy':'#FFD666', 'Line Drop':'#FF5C5C'
+};
+const C_BLUE = '#5B8DEF';
+const C_ORANGE = '#FF9F45';
+const C_GREEN = '#4ADE9E';
+const C_VOLUME_FILL = 'rgba(148,163,184,0.45)';
+const C_VOLUME_BORDER = '#94A3B8';
+let charts = {};
+let currentCsv = null;
+
+Chart.defaults.color = '#aab4c2';
+Chart.defaults.borderColor = '#2e3540';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.plugins.legend.labels.color = '#c8d1db';
+
+function fmt(n){ return (n===null||n===undefined) ? '-' : n.toLocaleString(); }
+
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function makeChart(id, config){
+  destroyChart(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, config);
+}
+
+// ---------------- Navigation ----------------
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------------- CSV list / upload ----------------
+async function loadCsvList(selectId){
+  const res = await fetch('/api/csvs');
+  const list = await res.json();
+  const sel = document.getElementById('csvSelect');
+  sel.innerHTML = '';
+  list.filter(c=>!c.error).forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${c.filename} (${fmt(c.rows)} rows, ${c.date_min} → ${c.date_max})`;
+    sel.appendChild(opt);
+  });
+  if(list.some(c=>c.error)){
+    console.warn('Some CSVs failed to load:', list.filter(c=>c.error));
+  }
+  if(selectId){ sel.value = selectId; }
+  if(sel.value){ currentCsv = sel.value; loadDashboard(); }
+}
+
+document.getElementById('uploadBtn').addEventListener('click', ()=>document.getElementById('uploadInput').click());
+document.getElementById('uploadInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  document.getElementById('loadError').textContent = 'Uploading...';
+  const res = await fetch('/api/upload', {method:'POST', body:fd});
+  const data = await res.json();
+  document.getElementById('loadError').textContent = '';
+  if(data.error){ document.getElementById('loadError').textContent = 'Upload failed: ' + data.error; return; }
+  await loadCsvList(data.id);
+});
+
+document.getElementById('csvSelect').addEventListener('change', (e)=>{
+  currentCsv = e.target.value;
+  document.getElementById('startDate').value = '';
+  document.getElementById('endDate').value = '';
+  loadDashboard();
+});
+document.getElementById('applyBtn').addEventListener('click', loadDashboard);
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  document.getElementById('startDate').value = '';
+  document.getElementById('endDate').value = '';
+  loadDashboard();
+});
+
+// ---------------- Dashboard loading ----------------
+async function loadDashboard(){
+  if(!currentCsv) return;
+  const start = document.getElementById('startDate').value;
+  const end = document.getElementById('endDate').value;
+  const params = new URLSearchParams({csv: currentCsv});
+  if(start) params.append('start', start);
+  if(end) params.append('end', end);
+  document.getElementById('loadError').textContent = '';
+  const res = await fetch('/api/dashboard?' + params.toString());
+  const data = await res.json();
+  if(data.error){ document.getElementById('loadError').textContent = data.error; return; }
+  renderMeta(data.meta);
+  renderKpis(data.kpis);
+  renderStatusChart(data.status_breakdown);
+  renderDailyChart(data.daily_trend);
+  renderWeekdayChart(data.weekday_breakdown);
+  renderHourlyChart(data.hourly);
+  renderDurByHourChart(data.duration_by_hour);
+  renderDurHistChart(data.duration_hist);
+  renderDtmfPie(data.kpis);
+  renderDtmfKeys(data.dtmf_keypad);
+  renderTalkTime(data.talk_time_buckets);
+  renderFailureChart(data.status_breakdown);
+  renderDipPeak(data.dip_vs_peak);
+  renderInsights(data.insights);
+}
+
+function renderMeta(meta){
+  document.getElementById('metaLine').textContent =
+    `${fmt(meta.rows)} rows in view · full file range ${meta.date_min} → ${meta.date_max}`;
+  if(!document.getElementById('startDate').value) document.getElementById('startDate').value = meta.date_min;
+  if(!document.getElementById('endDate').value) document.getElementById('endDate').value = meta.date_max;
+}
+
+function kpiCard(label, value, sub, subClass){
+  return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>${sub?`<div class="kpi-sub ${subClass||''}">${sub}</div>`:''}</div>`;
+}
+function renderKpis(k){
+  document.getElementById('kpiGrid').innerHTML = [
+    kpiCard('Total Attempts', fmt(k.total_attempts)),
+    kpiCard('Connected Calls', fmt(k.connected), `${k.connect_rate}% connect rate`, 'ok'),
+    kpiCard('Failed Attempts', fmt(k.failed_total), `${k.failure_rate}% failure rate`, 'bad'),
+    kpiCard('DTMF Responses', fmt(k.dtmf_pressed), `${k.dtmf_rate}% of connected`, 'neutral'),
+    kpiCard('Positive Response', fmt(k.positive_response), `${k.positive_rate}% of DTMF`, 'ok'),
+    kpiCard('Avg Duration', k.avg_duration + 's', `median ${k.median_duration}s`, 'neutral'),
+  ].join('');
+}
+
+function renderStatusChart(breakdown){
+  makeChart('chartStatus', {
+    type:'doughnut',
+    data:{ labels:breakdown.map(s=>s.status), datasets:[{data:breakdown.map(s=>s.count), backgroundColor:breakdown.map(s=>s.color), borderColor:'#12151a', borderWidth:2}] },
+    options:{plugins:{legend:{position:'bottom', labels:{boxWidth:10, color:'#c8d1db'}}}}
+  });
+}
+function renderDailyChart(daily){
+  makeChart('chartDaily', {
+    type:'line',
+    data:{ labels:daily.dates, datasets:[
+      {label:'Total Attempts', data:daily.total, borderColor:C_BLUE, tension:.25},
+      {label:'Connected', data:daily.connected, borderColor:C_ORANGE, tension:.25},
+      {label:'DTMF Responses', data:daily.dtmf, borderColor:C_GREEN, tension:.25},
+    ]},
+    options:{plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}}}
+  });
+}
+function renderWeekdayChart(wd){
+  makeChart('chartWeekday', {
+    type:'bar',
+    data:{ labels:wd.labels, datasets:[
+      {label:'Total Attempts', data:wd.total, backgroundColor:C_BLUE},
+      {label:'Connected', data:wd.connected, backgroundColor:C_ORANGE},
+    ]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+}
+function renderHourlyChart(h){
+  makeChart('chartHourly', {
+    type:'bar',
+    data:{ labels:h.hours.map(x=>x+':00'), datasets:[
+      {label:'Total Dial Attempts', data:h.total, backgroundColor:C_BLUE},
+      {label:'Connected Calls', data:h.connected, backgroundColor:C_ORANGE},
+    ]},
+    options:{plugins:{legend:{position:'bottom'}}}
+  });
+}
+function renderDurByHourChart(d){
+  makeChart('chartDurByHour', {
+    data:{ labels:d.hours.map(x=>x+':00'), datasets:[
+      {type:'bar', label:'Connected Calls', data:d.count, backgroundColor:C_VOLUME_FILL, borderColor:C_VOLUME_BORDER, borderWidth:1, yAxisID:'y1'},
+      {type:'line', label:'Mean Duration (s)', data:d.mean, borderColor:C_BLUE, yAxisID:'y', tension:.2},
+      {type:'line', label:'Median Duration (s)', data:d.median, borderColor:C_ORANGE, yAxisID:'y', tension:.2},
+    ]},
+    options:{plugins:{legend:{position:'bottom'}},
+      scales:{ y:{position:'left', title:{display:true,text:'Seconds'}}, y1:{position:'right', grid:{display:false}, title:{display:true,text:'Calls'}} }}
+  });
+}
+function renderDurHistChart(h){
+  makeChart('chartDurHist', {
+    type:'bar',
+    data:{ labels:h.labels, datasets:[{label:'Connected Calls', data:h.counts, backgroundColor:C_ORANGE}] },
+    options:{plugins:{legend:{display:false}}}
+  });
+}
+function renderDtmfPie(k){
+  makeChart('chartDtmfPie', {
+    type:'doughnut',
+    data:{ labels:['DTMF Pressed','No DTMF'], datasets:[{data:[k.dtmf_pressed, k.connected-k.dtmf_pressed], backgroundColor:[C_ORANGE, C_BLUE], borderColor:'#12151a', borderWidth:2}] },
+    options:{plugins:{legend:{position:'bottom', labels:{color:'#c8d1db'}}}}
+  });
+}
+function renderDtmfKeys(dk){
+  makeChart('chartDtmfKeys', {
+    type:'bar',
+    data:{ labels:dk.digits.map(d=>'Key '+d), datasets:[{label:'Presses', data:dk.counts, backgroundColor:C_BLUE}] },
+    options:{plugins:{legend:{display:false}}}
+  });
+}
+function renderTalkTime(tt){
+  makeChart('chartTalkTime', {
+    type:'bar',
+    data:{ labels:tt.labels, datasets:[{label:'Calls', data:tt.counts, backgroundColor:C_ORANGE}] },
+    options:{plugins:{legend:{display:false}}}
+  });
+}
+function renderFailureChart(breakdown){
+  const failures = breakdown.filter(s=>s.status!=='Connected');
+  makeChart('chartFailure', {
+    type:'bar',
+    indexAxis:'y',
+    data:{ labels:failures.map(s=>s.status), datasets:[{label:'Count', data:failures.map(s=>s.count), backgroundColor:failures.map(s=>s.color)}] },
+    options:{plugins:{legend:{display:false}}}
+  });
+}
+function renderDipPeak(dp){
+  const canvas = document.getElementById('chartDipPeak');
+  if(!dp){ destroyChart('chartDipPeak'); canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); return; }
+  const datasets = Object.entries(dp.series).map(([status, values])=>({
+    label:status, data:values, backgroundColor:STATUS_COLORS[status]||'#94A3B8', stack:'s'
+  }));
+  makeChart('chartDipPeak', {
+    type:'bar',
+    data:{ labels:dp.hours.map((h,i)=>`${h}\n(n=${fmt(dp.attempts[i])})`), datasets },
+    options:{ plugins:{legend:{position:'bottom'}}, scales:{ x:{stacked:true}, y:{stacked:true, title:{display:true,text:'% share'}} } }
+  });
+}
+
+function renderInsights(insights){
+  const el = document.getElementById('insightsList');
+  if(!insights || !insights.length){
+    el.innerHTML = '<div class="empty-state">No notable patterns detected for this selection — try widening the date range.</div>';
+    return;
+  }
+  el.innerHTML = insights.map(i => `
+    <div class="insight-card">
+      <div class="insight-cat">${i.category}</div>
+      <div class="insight-title">${i.title}</div>
+      <div class="insight-body">${i.body}</div>
+    </div>`).join('');
+}
+
+loadCsvList();
+</script>
+</body>
+</html>
